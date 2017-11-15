@@ -13,41 +13,58 @@ for link in pageLinks:
 
 #tableData = soup.find_all("table", {"class": "all-component-parts"})
 
-divData = soup.find_all("table", {"class": "all-component-parts"})
-tableData = (divData[0].find_all("tr"))
+allTableData = soup.find("table", {"class": "all-component-parts"})  #includes table head and table body
+tableBodyData = allTableData.find("tbody") #includes table body only
+tableRowsData = (tableBodyData.find_all("tr")) #includes all table rows within the table body
 
-#print tableData
-print "\n \n THE tableData VARIABLE TYPE IS:"
-print type(tableData)
-# print len(tableData)
-
-print "PARSING THROUGH tableData NOW"
-for table in tableData:
-    print "PRINTING INDIVIDUAL TABLE ITEM!!!"
+print "PARSING THROUGH tableRowsData NOW"
+for tableRow in tableRowsData:
+    print "PRINTING INDIVIDUAL Row on Table!"
+    tempDict = {}
     #print table
-    tableRows = table.find_all("td", {"class":"description"})
-    print tableRows
-    for row in tableRows:
+
+    ### Finding the list price
+    ourPriceData = tableRow.find("td", {"class":"our-price"})
+    ourPrice = ourPriceData.text
+    tempDict ['ourPrice'] = ourPrice
+    print "Our Price: {0}".format(ourPrice)
+
+    descriptionData = tableRow.find("td", {"class":"description"})
+    # print tableRows
+
+    # for row in tableRows:
         ### Finding the description
-        contextualDescription = row.find_all("p", {"class":"contextual_description"})
-        if not contextualDescription:
-            print "There is no Part Description available for this part."
-        else:
-            partDesc = contextualDescription[0].text
-            print "The Part Description is %s: " %partDesc
+    contextualDescription = descriptionData.find("p", {"class":"contextual_description"})
+    if not contextualDescription:
+        partDesc = "N/A"
+    else:
+        partDesc = contextualDescription.text
+    tempDict ['partDesc'] = partDesc
+    print "Part Description: {0}".format(partDesc)
 
-        ### Finding the Part Name
-        partNameAnchor = row.find_all("a")
-        partNameUrl = partNameAnchor[0].get("href")
-        print partNameUrl
 
-        partNameResp = requests.get(partNameUrl)
-        partNameSoup = BeautifulSoup(partNameResp.content)
-        partNotes = partNameSoup.find_all("li", {"class":"part-notes"})
-        partNameSpan = partNotes[0].find_all("span", {"class":"list_value"})
-        partName = partNameSpan[0].text
-        print partName
-        print ""
+
+    ### Finding the Part Name
+    ### I need to find the anchor href first
+    partNameAnchor = descriptionData.find_all("a")
+    partNameUrl = partNameAnchor[0].get("href")
+    ### Using the url, make a new soup requests
+    ### Parse the new page and find the part name
+    partNameResp = requests.get(partNameUrl)
+    partNameSoup = BeautifulSoup(partNameResp.content)
+    partNotes = partNameSoup.find_all("li", {"class":"part-notes"})
+    partNameSpan = partNotes[0].find_all("span", {"class":"list_value"})
+    partName = partNameSpan[0].text
+    tempDict ['partName'] = partName
+    print "Part Name: {0}".format(partName)
+
+    ### Find the part number from this page also
+    partNumberListItem = partNameSoup.find_all("li", {"class":"part_number"})
+    partNumberSpan = partNumberListItem[0].find_all("span", {"class":"list_value"})
+    partNumber = partNumberSpan[0].text
+    tempDict ['partNumber'] = partNumber
+    print "Part Number: {0}".format(partNumber)
+    print ""
 
     # for row in tableRows:
     #     print row
